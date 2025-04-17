@@ -1,127 +1,166 @@
--- Anti AFK Chamber Anime Vanguard (Game-specific)
-local UserInputService = game:GetService("UserInputService")
+if getgenv().AntiAFKEnabled then return end
+getgenv().AntiAFKEnabled = true
+
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-
--- Cấu hình
-local ANTI_AFK_ENABLED = true
-local CHECK_INTERVAL = 60  -- Kiểm tra mỗi 60 giây
-local ACTION_INTERVAL = 300 -- Hành động mỗi 5 phút
-local MIN_MOVE_DISTANCE = 10 -- Di chuyển tối thiểu 10 studs
-
--- Biến hệ thống
-local lastActionTime = tick()
 local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoid = character:WaitForChild("Humanoid")
 
--- UI đơn giản
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "AntiAFKUI"
-screenGui.Parent = game.CoreGui
+-- GUI setup
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+ScreenGui.Name = "AntiAFK_UI"
+ScreenGui.ResetOnSpawn = false
 
-local statusLabel = Instance.new("TextLabel")
-statusLabel.Size = UDim2.new(0, 200, 0, 40)
-statusLabel.Position = UDim2.new(0, 10, 0, 10)
-statusLabel.BackgroundTransparency = 0.7
-statusLabel.Text = "🟢 Anti-AFK: Đang hoạt động"
-statusLabel.TextColor3 = Color3.new(1, 1, 1)
-statusLabel.Font = Enum.Font.GothamBold
-statusLabel.Parent = screenGui
+local toggleButton = Instance.new("TextButton", ScreenGui)
+toggleButton.Size = UDim2.new(0, 120, 0, 35)
+toggleButton.Position = UDim2.new(0, 20, 1, -80)
+toggleButton.BackgroundColor3 = Color3.fromRGB(0, 255, 127)
+toggleButton.Text = "Hiện UI"
+toggleButton.TextColor3 = Color3.fromRGB(0, 0, 0)
+toggleButton.TextScaled = true
+toggleButton.ZIndex = 3
 
--- Hàm di chuyển ngẫu nhiên
-local function randomMove()
-    if not character or not humanoid then return end
-    
-    -- Chọn điểm ngẫu nhiên gần vị trí hiện tại
-    local rootPart = character:FindFirstChild("HumanoidRootPart")
-    if not rootPart then return end
-    
-    local currentPos = rootPart.Position
-    local randomOffset = Vector3.new(
-        math.random(-MIN_MOVE_DISTANCE, MIN_MOVE_DISTANCE),
-        0,
-        math.random(-MIN_MOVE_DISTANCE, MIN_MOVE_DISTANCE)
-    )
-    
-    humanoid:MoveTo(currentPos + randomOffset)
-    return true
-end
+-- Main UI frame
+local main = Instance.new("Frame", ScreenGui)
+main.Size = UDim2.new(0, 300, 0, 170)
+main.Position = UDim2.new(0.5, -150, 0.5, -100)
+main.BackgroundColor3 = Color3.fromRGB(50, 50, 100)
+main.BorderSizePixel = 0
+main.Visible = false
+main.Active = true
+main.Draggable = true
+main.ZIndex = 2
 
--- Hàm tương tác UI giả lập
-local function fakeUIInteraction()
-    -- Giả lập nhấn phím inventory (I) hoặc menu (M)
-    local keysToPress = {"I", "M", "Tab"}
-    local key = keysToPress[math.random(1, #keysToPress)]
-    
-    -- Mô phỏng nhấn phím
-    UserInputService:SendKeyEvent(true, key, false, game)
-    task.wait(0.1)
-    UserInputService:SendKeyEvent(false, key, false, game)
-    return true
-end
+local corner = Instance.new("UICorner", main)
+corner.CornerRadius = UDim.new(0, 10)
 
--- Hàm xoay camera tự nhiên
-local function rotateCamera()
-    local camera = workspace.CurrentCamera
-    if not camera then return end
-    
-    local currentCFrame = camera.CFrame
-    local randomAngle = math.rad(math.random(-15, 15))
-    
-    camera.CFrame = currentCFrame * CFrame.Angles(0, randomAngle, 0)
-    task.wait(0.2)
-    camera.CFrame = currentCFrame
-    return true
-end
+local stroke = Instance.new("UIStroke", main)
+stroke.Color = Color3.fromRGB(0, 255, 255)
+stroke.Thickness = 2
 
--- Hệ thống chống AFK chính
-local function antiAFKRoutine()
-    while ANTI_AFK_ENABLED and task.wait(CHECK_INTERVAL) do
-        local now = tick()
-        local elapsed = now - lastActionTime
-        
-        if elapsed >= ACTION_INTERVAL then
-            -- Chọn ngẫu nhiên 1 trong 3 hành động
-            local actionSuccess = false
-            local actionType = math.random(1, 3)
-            
-            if actionType == 1 then
-                actionSuccess = randomMove()
-            elseif actionType == 2 then
-                actionSuccess = fakeUIInteraction()
-            else
-                actionSuccess = rotateCamera()
-            end
-            
-            if actionSuccess then
-                lastActionTime = tick()
-                statusLabel.Text = "🟢 Anti-AFK: Đã kích hoạt "..os.date("%H:%M:%S")
-                
-                -- Log để debug
-                print("[Anti-AFK] Đã kích hoạt hành động loại", actionType)
-            end
-        else
-            local remaining = math.floor(ACTION_INTERVAL - elapsed)
-            statusLabel.Text = string.format("🟢 Anti-AFK: Hoạt động sau %ds", remaining)
-        end
-    end
-end
+local bg = Instance.new("ImageLabel", main)
+bg.Size = UDim2.new(1, 0, 1, 0)
+bg.Image = "https://i.imgur.com/pLR3yOm.jpeg" -- Hình Raiden
+bg.BackgroundTransparency = 1
+bg.ImageTransparency = 0.4
+bg.ZIndex = 0
 
--- Tự động cập nhật khi respawn
-player.CharacterAdded:Connect(function(newChar)
-    character = newChar
-    humanoid = newChar:WaitForChild("Humanoid")
+local title = Instance.new("TextLabel", main)
+title.Size = UDim2.new(1, 0, 0, 40)
+title.Position = UDim2.new(0, 0, 0, 0)
+title.Text = "ANTI AFK CHAMBER"
+title.Font = Enum.Font.GothamBold
+title.TextScaled = true
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.BackgroundTransparency = 1
+title.ZIndex = 2
+
+local status = Instance.new("TextLabel", main)
+status.Size = UDim2.new(1, -20, 0, 30)
+status.Position = UDim2.new(0, 10, 0, 50)
+status.Text = "Đang hoạt động..."
+status.Font = Enum.Font.Gotham
+status.TextScaled = true
+status.TextColor3 = Color3.fromRGB(255, 255, 0)
+status.BackgroundTransparency = 1
+status.ZIndex = 2
+
+-- Settings UI
+local settingsLabel = Instance.new("TextLabel", main)
+settingsLabel.Size = UDim2.new(1, -20, 0, 25)
+settingsLabel.Position = UDim2.new(0, 10, 0, 90)
+settingsLabel.Text = "Tuỳ chỉnh:"
+settingsLabel.Font = Enum.Font.GothamBold
+settingsLabel.TextScaled = true
+settingsLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+settingsLabel.BackgroundTransparency = 1
+settingsLabel.ZIndex = 2
+
+local sizeButton = Instance.new("TextButton", main)
+sizeButton.Size = UDim2.new(0.3, 0, 0, 25)
+sizeButton.Position = UDim2.new(0.05, 0, 0, 120)
+sizeButton.Text = "Size"
+sizeButton.Font = Enum.Font.Gotham
+sizeButton.TextScaled = true
+sizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+sizeButton.BackgroundColor3 = Color3.fromRGB(255, 128, 128)
+sizeButton.ZIndex = 2
+
+local colorButton = Instance.new("TextButton", main)
+colorButton.Size = UDim2.new(0.3, 0, 0, 25)
+colorButton.Position = UDim2.new(0.35, 10, 0, 120)
+colorButton.Text = "Màu"
+colorButton.Font = Enum.Font.Gotham
+colorButton.TextScaled = true
+colorButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+colorButton.BackgroundColor3 = Color3.fromRGB(128, 255, 128)
+colorButton.ZIndex = 2
+
+local bgButton = Instance.new("TextButton", main)
+bgButton.Size = UDim2.new(0.3, 0, 0, 25)
+bgButton.Position = UDim2.new(0.7, 0, 0, 120)
+bgButton.Text = "Nền"
+bgButton.Font = Enum.Font.Gotham
+bgButton.TextScaled = true
+bgButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+bgButton.BackgroundColor3 = Color3.fromRGB(128, 128, 255)
+bgButton.ZIndex = 2
+
+-- Toggle function
+toggleButton.MouseButton1Click:Connect(function()
+    main.Visible = not main.Visible
+    toggleButton.Text = main.Visible and "Ẩn UI" or "Hiện UI"
 end)
 
--- Bắt đầu hệ thống
-antiAFKRoutine()
+-- Size options
+local sizes = {
+    {300, 170},
+    {350, 200},
+    {400, 230}
+}
+local sizeIndex = 1
+sizeButton.MouseButton1Click:Connect(function()
+    sizeIndex = sizeIndex % #sizes + 1
+    main.Size = UDim2.new(0, sizes[sizeIndex][1], 0, sizes[sizeIndex][2])
+end)
 
--- Hotkey bật/tắt (Shift + F1)
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if input.KeyCode == Enum.KeyCode.F1 and UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
-        ANTI_AFK_ENABLED = not ANTI_AFK_ENABLED
-        statusLabel.Text = ANTI_AFK_ENABLED and "🟢 Anti-AFK: Đang hoạt động" or "🔴 Anti-AFK: Đã tắt"
-        print("Anti-AFK:", ANTI_AFK_ENABLED and "Bật" or "Tắt")
+-- Color options
+local colors = {
+    Color3.fromRGB(0,255,255),
+    Color3.fromRGB(255,0,255),
+    Color3.fromRGB(255,255,0),
+    Color3.fromRGB(255,128,0),
+}
+local colorIndex = 1
+colorButton.MouseButton1Click:Connect(function()
+    colorIndex = colorIndex % #colors + 1
+    stroke.Color = colors[colorIndex]
+end)
+
+-- Background options
+local bgs = {
+    "https://i.imgur.com/pLR3yOm.jpeg", -- Raiden
+    "https://i.imgur.com/3qPK8rY.jpeg",
+    "https://i.imgur.com/N9qz9p2.jpeg",
+}
+local bgIndex = 1
+bgButton.MouseButton1Click:Connect(function()
+    bgIndex = bgIndex % #bgs + 1
+    bg.Image = bgs[bgIndex]
+end)
+
+-- VirtualUser Anti AFK Logic
+for _, v in pairs(getconnections(player.Idled)) do
+    v:Disable()
+end
+
+task.spawn(function()
+    local vu = game:GetService("VirtualUser")
+    while getgenv().AntiAFKEnabled do
+        task.wait(300)
+        pcall(function()
+            vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+            task.wait(1)
+            vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+            workspace.CurrentCamera.CFrame = workspace.CurrentCamera.CFrame * CFrame.Angles(0, math.rad(1), 0)
+        end)
     end
 end)
