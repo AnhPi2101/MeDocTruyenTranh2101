@@ -1,77 +1,127 @@
--- Anti-AFK UI + Bypass AFK Chamber
-if getgenv().AntiAFKEnabled then return end
-getgenv().AntiAFKEnabled = true
+-- Anti AFK Chamber Anime Vanguard (Game-specific)
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 
--- UI hiện đại giống W Azure
-local imageURL = "https://i.imgur.com/3qPK8rY.jpeg" -- Hình Raiden
+-- Cấu hình
+local ANTI_AFK_ENABLED = true
+local CHECK_INTERVAL = 60  -- Kiểm tra mỗi 60 giây
+local ACTION_INTERVAL = 300 -- Hành động mỗi 5 phút
+local MIN_MOVE_DISTANCE = 10 -- Di chuyển tối thiểu 10 studs
 
-local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
-ScreenGui.Name = "AntiAFK_UI"
-ScreenGui.ResetOnSpawn = false
+-- Biến hệ thống
+local lastActionTime = tick()
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
 
-local main = Instance.new("Frame", ScreenGui)
-main.Size = UDim2.new(0, 300, 0, 100)
-main.Position = UDim2.new(1, -320, 1, -120)
-main.BackgroundTransparency = 0
-main.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-main.BorderSizePixel = 0
-main.ClipsDescendants = true
+-- UI đơn giản
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "AntiAFKUI"
+screenGui.Parent = game.CoreGui
 
-local corner = Instance.new("UICorner", main)
-corner.CornerRadius = UDim.new(0, 10)
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Size = UDim2.new(0, 200, 0, 40)
+statusLabel.Position = UDim2.new(0, 10, 0, 10)
+statusLabel.BackgroundTransparency = 0.7
+statusLabel.Text = "🟢 Anti-AFK: Đang hoạt động"
+statusLabel.TextColor3 = Color3.new(1, 1, 1)
+statusLabel.Font = Enum.Font.GothamBold
+statusLabel.Parent = screenGui
 
-local shadow = Instance.new("ImageLabel", main)
-shadow.Image = "rbxassetid://5553946656"
-shadow.ScaleType = Enum.ScaleType.Slice
-shadow.SliceCenter = Rect.new(20,20,280,280)
-shadow.Size = UDim2.new(1, 30, 1, 30)
-shadow.Position = UDim2.new(0, -15, 0, -15)
-shadow.BackgroundTransparency = 1
-shadow.ImageTransparency = 0.4
-shadow.ZIndex = -1
-
-local bg = Instance.new("ImageLabel", main)
-bg.Size = UDim2.new(1, 0, 1, 0)
-bg.Image = imageURL
-bg.BackgroundTransparency = 1
-bg.ImageTransparency = 0.2
-bg.ZIndex = 0
-
-local title = Instance.new("TextLabel", main)
-title.Size = UDim2.new(1, -20, 0.4, 0)
-title.Position = UDim2.new(0, 10, 0, 10)
-title.Text = "ANTI AFK CHAMBER"
-title.Font = Enum.Font.GothamBold
-title.TextScaled = true
-title.TextColor3 = Color3.new(1, 1, 1)
-title.BackgroundTransparency = 1
-title.TextStrokeTransparency = 0.7
-
-local status = Instance.new("TextLabel", main)
-status.Size = UDim2.new(1, -20, 0.4, 0)
-status.Position = UDim2.new(0, 10, 0.5, 0)
-status.Text = "Đang hoạt động..."
-status.Font = Enum.Font.Gotham
-status.TextScaled = true
-status.TextColor3 = Color3.fromRGB(200, 255, 200)
-status.BackgroundTransparency = 1
-status.TextStrokeTransparency = 0.8
-
--- Chống Roblox AFK
-for i,v in pairs(getconnections(game:GetService("Players").LocalPlayer.Idled)) do
-    v:Disable()
+-- Hàm di chuyển ngẫu nhiên
+local function randomMove()
+    if not character or not humanoid then return end
+    
+    -- Chọn điểm ngẫu nhiên gần vị trí hiện tại
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return end
+    
+    local currentPos = rootPart.Position
+    local randomOffset = Vector3.new(
+        math.random(-MIN_MOVE_DISTANCE, MIN_MOVE_DISTANCE),
+        0,
+        math.random(-MIN_MOVE_DISTANCE, MIN_MOVE_DISTANCE)
+    )
+    
+    humanoid:MoveTo(currentPos + randomOffset)
+    return true
 end
 
--- Bypass AFK Chamber (di chuyển camera + chuột)
-task.spawn(function()
-    local vu = game:GetService("VirtualUser")
-    while task.wait(300) do
-        if not getgenv().AntiAFKEnabled then break end
-        pcall(function()
-            vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-            task.wait(1)
-            vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-            workspace.CurrentCamera.CFrame = workspace.CurrentCamera.CFrame * CFrame.Angles(0, math.rad(1), 0)
-        end)
+-- Hàm tương tác UI giả lập
+local function fakeUIInteraction()
+    -- Giả lập nhấn phím inventory (I) hoặc menu (M)
+    local keysToPress = {"I", "M", "Tab"}
+    local key = keysToPress[math.random(1, #keysToPress)]
+    
+    -- Mô phỏng nhấn phím
+    UserInputService:SendKeyEvent(true, key, false, game)
+    task.wait(0.1)
+    UserInputService:SendKeyEvent(false, key, false, game)
+    return true
+end
+
+-- Hàm xoay camera tự nhiên
+local function rotateCamera()
+    local camera = workspace.CurrentCamera
+    if not camera then return end
+    
+    local currentCFrame = camera.CFrame
+    local randomAngle = math.rad(math.random(-15, 15))
+    
+    camera.CFrame = currentCFrame * CFrame.Angles(0, randomAngle, 0)
+    task.wait(0.2)
+    camera.CFrame = currentCFrame
+    return true
+end
+
+-- Hệ thống chống AFK chính
+local function antiAFKRoutine()
+    while ANTI_AFK_ENABLED and task.wait(CHECK_INTERVAL) do
+        local now = tick()
+        local elapsed = now - lastActionTime
+        
+        if elapsed >= ACTION_INTERVAL then
+            -- Chọn ngẫu nhiên 1 trong 3 hành động
+            local actionSuccess = false
+            local actionType = math.random(1, 3)
+            
+            if actionType == 1 then
+                actionSuccess = randomMove()
+            elseif actionType == 2 then
+                actionSuccess = fakeUIInteraction()
+            else
+                actionSuccess = rotateCamera()
+            end
+            
+            if actionSuccess then
+                lastActionTime = tick()
+                statusLabel.Text = "🟢 Anti-AFK: Đã kích hoạt "..os.date("%H:%M:%S")
+                
+                -- Log để debug
+                print("[Anti-AFK] Đã kích hoạt hành động loại", actionType)
+            end
+        else
+            local remaining = math.floor(ACTION_INTERVAL - elapsed)
+            statusLabel.Text = string.format("🟢 Anti-AFK: Hoạt động sau %ds", remaining)
+        end
+    end
+end
+
+-- Tự động cập nhật khi respawn
+player.CharacterAdded:Connect(function(newChar)
+    character = newChar
+    humanoid = newChar:WaitForChild("Humanoid")
+end)
+
+-- Bắt đầu hệ thống
+antiAFKRoutine()
+
+-- Hotkey bật/tắt (Shift + F1)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if input.KeyCode == Enum.KeyCode.F1 and UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+        ANTI_AFK_ENABLED = not ANTI_AFK_ENABLED
+        statusLabel.Text = ANTI_AFK_ENABLED and "🟢 Anti-AFK: Đang hoạt động" or "🔴 Anti-AFK: Đã tắt"
+        print("Anti-AFK:", ANTI_AFK_ENABLED and "Bật" or "Tắt")
     end
 end)
