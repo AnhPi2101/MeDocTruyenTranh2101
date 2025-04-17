@@ -212,6 +212,23 @@ local function detectAFKChamber()
 	end
 end
 
+-- Tối ưu đồ họa (reduce lag)
+pcall(function()
+	for _, v in pairs(game:GetDescendants()) do
+		if v:IsA("BasePart") then
+			v.Material = Enum.Material.SmoothPlastic
+			v.Reflectance = 0
+		elseif v:IsA("Decal") or v:IsA("Texture") then
+			v:Destroy()
+		elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
+			v.Lifetime = NumberRange.new(0)
+		end
+	end
+
+	settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+	settings().Rendering.EditQualityLevel = Enum.QualityLevel.Level01
+end)
+
 --=== Chạy Vòng Lặp Chính ===--
 
 while true do
