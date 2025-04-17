@@ -1,212 +1,225 @@
---===[ MeDocTruyenTranh – Anti AFK Chamber Full ]===--
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInput = game:GetService("UserInputService")
+local TeleportService = game:GetService("TeleportService")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
 
 -- Cấu hình key
 local key_required = "zzollyan"
-
--- Đợi tối đa 15 giây để getgenv().key được set
 local timeout = 15
 local start = tick()
+
+-- Kiểm tra key
 repeat task.wait(0.5) until getgenv().key ~= nil or tick() - start > timeout
 
--- Nếu sai key thì không chạy
 if getgenv().key ~= key_required then
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "Anti AFK Chamber",
-        Text = "Sai key hoặc chưa nhập key.\nDùng: getgenv().key = \"zzollyan\"",
-        Duration = 10
-    })
-    return
+	game:GetService("StarterGui"):SetCore("SendNotification", {
+		Title = "Anti AFK Chamber",
+		Text = "Sai key hoặc chưa nhập key.\nDùng: getgenv().key = \"zzollyan\"",
+		Duration = 10
+	})
+	return
 end
 
---===[ Tối ưu hóa cực mạnh giảm lag ]===--
-pcall(function()
-    setfpscap(15)
+-- GUI GỐC
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "MeDocRaidenUI"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+-- FRAME CHÍNH
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 350, 0, 160)
+frame.Position = UDim2.new(0.03, 0, 0.05, 0)
+frame.BackgroundTransparency = 1
+frame.Active = true
+frame.Parent = screenGui
+
+-- ẢNH RAIDEN SHOGUN (nền)
+local image = Instance.new("ImageLabel")
+image.Size = UDim2.new(1, 0, 1, 0)
+image.Position = UDim2.new(0, 0, 0, 0)
+image.BackgroundTransparency = 1
+image.Image = "rbxassetid://99255503850752" -- <<< Thay bằng ID ảnh Raiden
+image.ScaleType = Enum.ScaleType.Crop
+image.Parent = frame
+
+-- HIỆU ỨNG GRADIENT
+local gradient = Instance.new("UIGradient")
+gradient.Color = ColorSequence.new{
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(220, 220, 220)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(60, 60, 60)),
+}
+gradient.Rotation = 0
+gradient.Parent = image
+
+-- TWEEN GRADIENT LIÊN TỤC
+spawn(function()
+	local tweenInfo = TweenInfo.new(20, Enum.EasingStyle.Linear)
+	while true do
+		local goal = { Rotation = gradient.Rotation + 360 }
+		local tween = TweenService:Create(gradient, tweenInfo, goal)
+		tween:Play()
+		tween.Completed:Wait()
+	end
 end)
 
-local lighting = game:GetService("Lighting")
-lighting.GlobalShadows = false
-lighting.FogEnd = 1e10
-lighting.Brightness = 0
-
-for _, v in pairs(game:GetDescendants()) do
-    if v:IsA("BasePart") then
-        v.Material = Enum.Material.SmoothPlastic
-        v.Reflectance = 0
-    elseif v:IsA("Decal") or v:IsA("Texture") then
-        v.Transparency = 1
-    elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
-        v.Lifetime = NumberRange.new(0)
-    end
-end
-
---===[ Dịch vụ & biến chính ]===--
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UIS = game:GetService("UserInputService")
-local VIM = game:GetService("VirtualInputManager")
-local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoid = character:WaitForChild("Humanoid")
-local lastActionTime = tick()
-local ENABLED = true
-
---===[ Tạo UI hiện đại có thể kéo ===--
-local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-gui.Name = "MeDocTruyenTranhUI"
-
-local mainFrame = Instance.new("Frame", gui)
-mainFrame.Size = UDim2.new(0, 300, 0, 150)
-mainFrame.Position = UDim2.new(0.5, -150, 0.8, 0)
-mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-mainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-
-Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 6)
-
-local title = Instance.new("TextLabel", mainFrame)
-title.Text = "MeDocTruyenTranh"
-title.Size = UDim2.new(1, 0, 0, 30)
-title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-title.TextColor3 = Color3.new(1,1,1)
+-- TIÊU ĐỀ RICHTEXT
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 35)
+title.Position = UDim2.new(0, 0, 0, 5)
+title.BackgroundTransparency = 1
+title.RichText = true
+title.Text = '<font color="#00AEEF">MeDoc</font><font color="#EC0B3D">TruyenTranh</font>'
 title.Font = Enum.Font.GothamBold
-title.TextSize = 18
+title.TextScaled = true
+title.TextXAlignment = Enum.TextXAlignment.Center
+title.TextColor3 = Color3.new(1, 1, 1)
+title.Parent = frame
 
-local timeElapsed = Instance.new("TextLabel", mainFrame)
-timeElapsed.Position = UDim2.new(0, 10, 0, 40)
-timeElapsed.Size = UDim2.new(1, -20, 0, 20)
-timeElapsed.Text = "Client Time Elapsed: 0h:00m:00s"
-timeElapsed.TextColor3 = Color3.new(1,1,1)
-timeElapsed.Font = Enum.Font.Gotham
-timeElapsed.TextSize = 14
-timeElapsed.TextXAlignment = Enum.TextXAlignment.Left
+-- TRẠNG THÁI
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Size = UDim2.new(1, 0, 0, 25)
+statusLabel.Position = UDim2.new(0, 0, 0, 50)
+statusLabel.BackgroundTransparency = 1
+statusLabel.Text = "Status: Đang hoạt động"
+statusLabel.Font = Enum.Font.Gotham
+statusLabel.TextScaled = true
+statusLabel.TextXAlignment = Enum.TextXAlignment.Center
+statusLabel.TextColor3 = Color3.new(1, 1, 1)
+statusLabel.Parent = frame
 
-local status = Instance.new("TextLabel", mainFrame)
-status.Text = "Anti AFK Chamber: Khởi động..."
-status.Position = UDim2.new(0, 10, 0, 100)
-status.Size = UDim2.new(1, -20, 0, 20)
-status.TextColor3 = Color3.new(0,1,0)
-status.Font = Enum.Font.Gotham
-status.TextSize = 14
-status.TextXAlignment = Enum.TextXAlignment.Left
+-- TIMER
+local timerLabel = Instance.new("TextLabel")
+timerLabel.Size = UDim2.new(1, 0, 0, 25)
+timerLabel.Position = UDim2.new(0, 0, 0, 85)
+timerLabel.BackgroundTransparency = 1
+timerLabel.Text = "00:00:00"
+timerLabel.Font = Enum.Font.Gotham
+timerLabel.TextScaled = true
+timerLabel.TextXAlignment = Enum.TextXAlignment.Center
+timerLabel.TextColor3 = Color3.new(1, 1, 1)
+timerLabel.Parent = frame
 
-local toggle = Instance.new("ImageButton", mainFrame)
-toggle.Image = "rbxassetid://14230252389"
-toggle.Size = UDim2.new(0, 20, 0, 20)
-toggle.Position = UDim2.new(1, -25, 0, 5)
-toggle.BackgroundTransparency = 1
-
--- Thu/phóng UI
-local shown = true
-toggle.MouseButton1Click:Connect(function()
-    shown = not shown
-    mainFrame:TweenSize(
-        shown and UDim2.new(0,300,0,150) or UDim2.new(0,300,0,0),
-        "Out", "Sine", 0.3, true
-    )
+-- TÍNH GIỜ
+spawn(function()
+	local startTime = os.time()
+	while true do
+		local elapsed = os.time() - startTime
+		local h = math.floor(elapsed / 3600)
+		local m = math.floor((elapsed % 3600) / 60)
+		local s = elapsed % 60
+		timerLabel.Text = string.format("%02d:%02d:%02d", h, m, s)
+		wait(1)
+	end
 end)
 
--- Kéo UI
-local dragging, dragInput, mousePos, framePos = false, nil, nil, nil
-mainFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        mousePos = input.Position
-        framePos = mainFrame.Position
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
-end)
-mainFrame.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        dragInput = input
-    end
-end)
-UIS.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        local delta = input.Position - mousePos
-        mainFrame.Position = UDim2.new(
-            framePos.X.Scale, framePos.X.Offset + delta.X,
-            framePos.Y.Scale, framePos.Y.Offset + delta.Y
-        )
-    end
-end)
+-- KÉO THẢ UI
+do
+	local dragging, dragInput, dragStart, startPos
+	local function update(input)
+		local delta = input.Position - dragStart
+		frame.Position = UDim2.new(
+			startPos.X.Scale,
+			startPos.X.Offset + delta.X,
+			startPos.Y.Scale,
+			startPos.Y.Offset + delta.Y
+		)
+	end
 
--- Bộ đếm thời gian
-local startTime = os.time()
-RunService.Heartbeat:Connect(function()
-    local elapsed = os.time() - startTime
-    local h = math.floor(elapsed / 3600)
-    local m = math.floor((elapsed % 3600) / 60)
-    local s = elapsed % 60
-    timeElapsed.Text = string.format("Client Time Elapsed: %dh:%02dm:%02ds", h, m, s)
-end)
+	frame.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragging  = true
+			dragStart = input.Position
+			startPos  = frame.Position
 
---===[ Hành động chống AFK ]===--
-local function randomMove()
-    local root = character:FindFirstChild("HumanoidRootPart")
-    if root then
-        humanoid:MoveTo(root.Position + Vector3.new(math.random(-5,5),0,math.random(-5,5)))
-    end
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					dragging = false
+				end
+			end)
+		end
+	end)
+
+	frame.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement then
+			dragInput = input
+		end
+	end)
+
+	UserInput.InputChanged:Connect(function(input)
+		if dragging and input == dragInput then
+			update(input)
+		end
+	end)
 end
+
+--===[ Các chức năng chống AFK ]===--
+
 local function fakeKey()
-    VIM:SendKeyEvent(true, Enum.KeyCode.F, false, game)
-    task.wait(0.1)
-    VIM:SendKeyEvent(false, Enum.KeyCode.F, false, game)
+	pcall(function()
+		game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.J, false, game)  -- Thay Space thành J
+		game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.J, false, game) -- Thay Space thành J
+	end)
 end
-local function rotateCam()
-    workspace.CurrentCamera.CFrame *= CFrame.Angles(0, math.rad(math.random(-10,10)), 0)
-end
-local function simulateClick()
-    VIM:SendMouseButtonEvent(200,200,0,true,game,0)
-    task.wait(0.1)
-    VIM:SendMouseButtonEvent(200,200,0,false,game,0)
-end
-local function simulateMouseMove()
-    VIM:SendMouseMoveEvent(math.random(100,700), math.random(100,700), game)
-end
+
 local function jump()
-    if humanoid and humanoid:GetState()~=Enum.HumanoidStateType.Jumping then
-        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-    end
+	pcall(function()
+		game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.Space, false, game)
+		game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+	end)
 end
 
---===[ Tự động chat mỗi 5 phút ]===--
+local function moveRandomDirection()
+	local directions = {Enum.KeyCode.W, Enum.KeyCode.A, Enum.KeyCode.S, Enum.KeyCode.D}
+	local randomDirection = directions[math.random(1, #directions)]
+	pcall(function()
+		game:GetService("VirtualInputManager"):SendKeyEvent(true, randomDirection, false, game)
+		game:GetService("VirtualInputManager"):SendKeyEvent(false, randomDirection, false, game)
+	end)
+end
+
+--===[ Tự động chat ]===--
+
 task.spawn(function()
-    local phrases = {
-        "script tốt thật sự", "đọc truyện tranh ở MeDocTruyenTranh vui ghê",
-        "không afk nha roblox", "tôi còn đang chơi mà", "tôi yêu Raiden"
-    }
-    while true do
-        task.wait(300) -- 5 phút
-        pcall(function()
-            game.ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(
-                phrases[math.random(1, #phrases)], "All"
-            )
-        end)
-    end
+	local messages = {
+		"script tốt thật sự", "tôi yêu MeDocTruyenTranh",
+		"Raiden đẹp thật", "mình còn đang chơi mà", "anti afk không thấm được"
+	}
+	while true do
+		wait(300)
+		local msg = messages[math.random(1, #messages)]
+		pcall(function()
+			game.ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg, "All")
+		end)
+	end
 end)
 
---===[ Vòng lặp chống AFK ]===--
-local function antiAFKLoop()
-    while ENABLED do
-        task.wait(30)
-        if tick() - lastActionTime >= 120 then
-            local funcs = {randomMove, fakeKey, rotateCam, simulateClick, simulateMouseMove, jump}
-            funcs[math.random(1,#funcs)]()
-            lastActionTime = tick()
-            status.Text = "Anti AFK: Đã hoạt động lúc " .. os.date("%H:%M:%S")
-        end
-    end
+--===[ Detect AFK Chamber và auto return to lobby ]===--
+
+local function detectAFKChamber()
+	while true do
+		local placeId = game.PlaceId
+		-- Bạn cần thay PLACEID_AFK thành placeId thật sự của AFK Chamber
+		local PLACEID_AFK = 16465572687
+		local LOBBY_PLACEID = 1234567890  -- PlaceId của lobby
+
+		if placeId == PLACEID_AFK then
+			game:GetService("TeleportService"):TeleportToPlaceInstance(LOBBY_PLACEID, game.JobId)
+		end
+		wait(10)
+	end
 end
 
--- Auto chạy lại sau teleport
-player.CharacterAdded:Connect(function(c)
-    character = c
-    humanoid = c:WaitForChild("Humanoid")
-    task.wait(1)
-    task.spawn(antiAFKLoop)
-end)
+--=== Chạy Vòng Lặp Chính ===--
 
-task.spawn(antiAFKLoop)
+while true do
+	wait(10)
+	fakeKey()
+	jump()
+	moveRandomDirection()
+
+	-- Update trạng thái UI
+	statusLabel.Text = "Status: Đang hoạt động"
+end
