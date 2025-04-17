@@ -1,12 +1,18 @@
---=== MeDocTruyenTranh – Anti AFK Chamber (with dragable UI) ===--
-
--- Kiểm tra key
+--===[ Đợi getgenv().key được khai báo ]===--
 local key_required = "zzollyan"
-if not getgenv().key or getgenv().key ~= key_required then
+
+-- Đợi tối đa 15 giây để getgenv().key được set
+local timeout = 15
+local start = tick()
+repeat
+    task.wait(0.5)
+until getgenv().key ~= nil or tick() - start > timeout
+
+if getgenv().key ~= key_required then
     game:GetService("StarterGui"):SetCore("SendNotification", {
         Title = "Anti AFK Chamber",
-        Text = "Sai key hoặc chưa nhập key.\nDùng getgenv().key = \"zzollyan\" rồi chạy lại.",
-        Duration = 8
+        Text = "Sai key hoặc key không tồn tại. Hãy khai báo: getgenv().key = 'zzollyan'",
+        Duration = 10
     })
     return
 end
@@ -16,6 +22,7 @@ local Players        = game:GetService("Players")
 local RunService     = game:GetService("RunService")
 local UIS            = game:GetService("UserInputService")
 local VIM            = game:GetService("VirtualInputManager")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- Người chơi & nhân vật
 local player     = Players.LocalPlayer
@@ -200,6 +207,16 @@ local function jump()
     end
 end
 
+--=== Gửi tin nhắn tự động trong 5 phút (30 giây một lần) ===--
+local function autoChat()
+    local startTime = tick()
+    while tick() - startTime < 300 do  -- Gửi trong 5 phút (300 giây)
+        task.wait(30)  -- Chờ 30 giây trước mỗi lần gửi tin nhắn
+        -- Gửi tin nhắn tự động
+        ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer("Hello, this is an automated message.", "All")
+    end
+end
+
 --=== Vòng lặp chống AFK ===--
 local function antiAFKLoop()
     while ENABLED do
@@ -221,3 +238,4 @@ end)
 
 -- Start
 task.spawn(antiAFKLoop)
+task.spawn(autoChat)  -- Chạy tự động chat
