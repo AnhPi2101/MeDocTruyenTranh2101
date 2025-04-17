@@ -1,5 +1,5 @@
--- Thay link raw script chính tại đây
-local rawScriptURL = "https://raw.githubusercontent.com/yourusername/yourscript/main/anti_afk.lua"
+-- Đường dẫn đến script chính
+local rawScriptURL = "https://raw.githubusercontent.com/AnhPi2101/MeDocTruyenTranh2101/main/antiafk_core.lua"
 local correctKey = "zzollyan"
 
 -- UI Nhập key nếu chưa có
