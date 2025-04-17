@@ -1,125 +1,100 @@
---===[ Đợi getgenv().key được khai báo ]===--
+--===[ MeDocTruyenTranh – Anti AFK Chamber Full ]===--
+
+-- Cấu hình key
 local key_required = "zzollyan"
 
 -- Đợi tối đa 15 giây để getgenv().key được set
 local timeout = 15
 local start = tick()
-repeat
-    task.wait(0.5)
-until getgenv().key ~= nil or tick() - start > timeout
+repeat task.wait(0.5) until getgenv().key ~= nil or tick() - start > timeout
 
+-- Nếu sai key thì không chạy
 if getgenv().key ~= key_required then
     game:GetService("StarterGui"):SetCore("SendNotification", {
         Title = "Anti AFK Chamber",
-        Text = "Sai key hoặc key không tồn tại. Hãy khai báo: getgenv().key = 'zzollyan'",
+        Text = "Sai key hoặc chưa nhập key.\nDùng: getgenv().key = \"zzollyan\"",
         Duration = 10
     })
     return
 end
 
--- Dịch vụ
-local Players        = game:GetService("Players")
-local RunService     = game:GetService("RunService")
-local UIS            = game:GetService("UserInputService")
-local VIM            = game:GetService("VirtualInputManager")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+--===[ Tối ưu hóa cực mạnh giảm lag ]===--
+pcall(function()
+    setfpscap(15)
+end)
 
--- Người chơi & nhân vật
-local player     = Players.LocalPlayer
-local character  = player.Character or player.CharacterAdded:Wait()
-local humanoid   = character:WaitForChild("Humanoid")
+local lighting = game:GetService("Lighting")
+lighting.GlobalShadows = false
+lighting.FogEnd = 1e10
+lighting.Brightness = 0
 
--- Thời gian
-local lastActionTime  = tick()
-local CHECK_INTERVAL  = 30
-local ACTION_INTERVAL = 120
-local ENABLED         = true
+for _, v in pairs(game:GetDescendants()) do
+    if v:IsA("BasePart") then
+        v.Material = Enum.Material.SmoothPlastic
+        v.Reflectance = 0
+    elseif v:IsA("Decal") or v:IsA("Texture") then
+        v.Transparency = 1
+    elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
+        v.Lifetime = NumberRange.new(0)
+    end
+end
 
---=== UI Hiện Đại ===--
-local gui = Instance.new("ScreenGui")
-gui.Name   = "MeDocTruyenTranhUI"
-gui.Parent = player:WaitForChild("PlayerGui")
+--===[ Dịch vụ & biến chính ]===--
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+local VIM = game:GetService("VirtualInputManager")
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local lastActionTime = tick()
+local ENABLED = true
+
+--===[ Tạo UI hiện đại có thể kéo ===--
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.Name = "MeDocTruyenTranhUI"
 
 local mainFrame = Instance.new("Frame", gui)
-mainFrame.Size              = UDim2.new(0, 300, 0, 150)
-mainFrame.Position          = UDim2.new(0.5, -150, 0.8, 0)
-mainFrame.AnchorPoint       = Vector2.new(0.5, 0.5)
-mainFrame.BackgroundColor3  = Color3.fromRGB(40, 40, 40)
-mainFrame.BorderSizePixel   = 0
-mainFrame.ClipsDescendants  = true
+mainFrame.Size = UDim2.new(0, 300, 0, 150)
+mainFrame.Position = UDim2.new(0.5, -150, 0.8, 0)
+mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+mainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 
--- Bo góc
-local UICorner = Instance.new("UICorner", mainFrame)
-UICorner.CornerRadius = UDim.new(0, 6)
+Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 6)
 
--- Tiêu đề
 local title = Instance.new("TextLabel", mainFrame)
-title.Text             = "MeDocTruyenTranh"
-title.Size             = UDim2.new(1, 0, 0, 30)
-title.Position         = UDim2.new(0, 0, 0, 0)
+title.Text = "MeDocTruyenTranh"
+title.Size = UDim2.new(1, 0, 0, 30)
 title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-title.TextColor3       = Color3.new(1,1,1)
-title.Font             = Enum.Font.GothamBold
-title.TextSize         = 18
+title.TextColor3 = Color3.new(1,1,1)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
 
--- Bộ đếm client time
 local timeElapsed = Instance.new("TextLabel", mainFrame)
-timeElapsed.Text            = "Client Time Elapsed: 0h:00m:00s"
-timeElapsed.Size            = UDim2.new(1, -20, 0, 20)
-timeElapsed.Position        = UDim2.new(0, 10, 0, 40)
-timeElapsed.TextXAlignment  = Enum.TextXAlignment.Left
-timeElapsed.TextColor3      = Color3.new(1,1,1)
-timeElapsed.Font            = Enum.Font.Gotham
-timeElapsed.TextSize        = 14
+timeElapsed.Position = UDim2.new(0, 10, 0, 40)
+timeElapsed.Size = UDim2.new(1, -20, 0, 20)
+timeElapsed.Text = "Client Time Elapsed: 0h:00m:00s"
+timeElapsed.TextColor3 = Color3.new(1,1,1)
+timeElapsed.Font = Enum.Font.Gotham
+timeElapsed.TextSize = 14
+timeElapsed.TextXAlignment = Enum.TextXAlignment.Left
 
--- Nút chức năng (Opio & Edit)
-local opioButton = Instance.new("TextButton", mainFrame)
-opioButton.Text             = "[Opio]"
-opioButton.Size             = UDim2.new(0, 60, 0, 25)
-opioButton.Position         = UDim2.new(0, 10, 0, 65)
-opioButton.BackgroundColor3 = Color3.fromRGB(60,60,60)
-opioButton.TextColor3       = Color3.new(1,1,1)
-opioButton.Font             = Enum.Font.Gotham
-opioButton.TextSize         = 14
-
-local editButton = Instance.new("TextButton", mainFrame)
-editButton.Text             = "[Edit]"
-editButton.Size             = UDim2.new(0, 60, 0, 25)
-editButton.Position         = UDim2.new(0, 80, 0, 65)
-editButton.BackgroundColor3 = Color3.fromRGB(60,60,60)
-editButton.TextColor3       = Color3.new(1,1,1)
-editButton.Font             = Enum.Font.Gotham
-editButton.TextSize         = 14
-
--- Mô tả nhỏ
-local altLabel = Instance.new("TextLabel", mainFrame)
-altLabel.Text            = "[Alt]: MeDocTruyenTranh - Đọc truyện tranh online tốc độ cao."
-altLabel.Size            = UDim2.new(1, -20, 0, 30)
-altLabel.Position        = UDim2.new(0, 10, 1, -40)
-altLabel.TextXAlignment  = Enum.TextXAlignment.Left
-altLabel.TextYAlignment  = Enum.TextYAlignment.Top
-altLabel.TextWrapped     = true
-altLabel.TextColor3      = Color3.fromRGB(200,200,200)
-altLabel.Font            = Enum.Font.Gotham
-altLabel.TextSize        = 12
-
--- Trạng thái AFK
 local status = Instance.new("TextLabel", mainFrame)
-status.Text            = "Anti AFK Chamber: Khởi động..."
-status.Size            = UDim2.new(1, -20, 0, 20)
-status.Position        = UDim2.new(0, 10, 0, 100)
-status.TextXAlignment  = Enum.TextXAlignment.Left
-status.TextColor3      = Color3.new(0,1,0)
-status.Font            = Enum.Font.Gotham
-status.TextSize        = 14
+status.Text = "Anti AFK Chamber: Khởi động..."
+status.Position = UDim2.new(0, 10, 0, 100)
+status.Size = UDim2.new(1, -20, 0, 20)
+status.TextColor3 = Color3.new(0,1,0)
+status.Font = Enum.Font.Gotham
+status.TextSize = 14
+status.TextXAlignment = Enum.TextXAlignment.Left
 
--- Nút thu/phóng (logo)
 local toggle = Instance.new("ImageButton", mainFrame)
-toggle.Image             = "rbxassetid://14230252389"
-toggle.Size              = UDim2.new(0,20,0,20)
-toggle.Position          = UDim2.new(1,-25,0,5)
+toggle.Image = "rbxassetid://14230252389"
+toggle.Size = UDim2.new(0, 20, 0, 20)
+toggle.Position = UDim2.new(1, -25, 0, 5)
 toggle.BackgroundTransparency = 1
 
+-- Thu/phóng UI
 local shown = true
 toggle.MouseButton1Click:Connect(function()
     shown = not shown
@@ -129,9 +104,8 @@ toggle.MouseButton1Click:Connect(function()
     )
 end)
 
---=== Drag hỗ trợ ===--
+-- Kéo UI
 local dragging, dragInput, mousePos, framePos = false, nil, nil, nil
-
 mainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
@@ -144,13 +118,11 @@ mainFrame.InputBegan:Connect(function(input)
         end)
     end
 end)
-
 mainFrame.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseMovement then
         dragInput = input
     end
 end)
-
 UIS.InputChanged:Connect(function(input)
     if input == dragInput and dragging then
         local delta = input.Position - mousePos
@@ -161,7 +133,7 @@ UIS.InputChanged:Connect(function(input)
     end
 end)
 
--- Cập nhật bộ đếm thời gian
+-- Bộ đếm thời gian
 local startTime = os.time()
 RunService.Heartbeat:Connect(function()
     local elapsed = os.time() - startTime
@@ -171,71 +143,70 @@ RunService.Heartbeat:Connect(function()
     timeElapsed.Text = string.format("Client Time Elapsed: %dh:%02dm:%02ds", h, m, s)
 end)
 
---=== 6 Hành động Chống AFK ===--
+--===[ Hành động chống AFK ]===--
 local function randomMove()
     local root = character:FindFirstChild("HumanoidRootPart")
     if root then
-        local off = Vector3.new(math.random(-5,5),0,math.random(-5,5))
-        humanoid:MoveTo(root.Position + off)
+        humanoid:MoveTo(root.Position + Vector3.new(math.random(-5,5),0,math.random(-5,5)))
     end
 end
-
 local function fakeKey()
     VIM:SendKeyEvent(true, Enum.KeyCode.F, false, game)
     task.wait(0.1)
     VIM:SendKeyEvent(false, Enum.KeyCode.F, false, game)
 end
-
 local function rotateCam()
-    local cam = workspace.CurrentCamera
-    cam.CFrame = cam.CFrame * CFrame.Angles(0, math.rad(math.random(-10,10)), 0)
+    workspace.CurrentCamera.CFrame *= CFrame.Angles(0, math.rad(math.random(-10,10)), 0)
 end
-
 local function simulateClick()
     VIM:SendMouseButtonEvent(200,200,0,true,game,0)
     task.wait(0.1)
     VIM:SendMouseButtonEvent(200,200,0,false,game,0)
 end
-
 local function simulateMouseMove()
-    VIM:SendMouseMoveEvent(math.random(1,500), math.random(1,500), game)
+    VIM:SendMouseMoveEvent(math.random(100,700), math.random(100,700), game)
 end
-
 local function jump()
     if humanoid and humanoid:GetState()~=Enum.HumanoidStateType.Jumping then
         humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
     end
 end
 
---=== Gửi tin nhắn tự động trong 5 phút (30 giây một lần) ===--
-local function autoChat()
-    local startTime = tick()
-    while tick() - startTime < 300 do  -- Gửi trong 5 phút (300 giây)
-        task.wait(30)  -- Chờ 30 giây trước mỗi lần gửi tin nhắn
-        -- Gửi tin nhắn tự động
-        ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer("Hello, this is an automated message.", "All")
+--===[ Tự động chat mỗi 5 phút ]===--
+task.spawn(function()
+    local phrases = {
+        "script tốt thật sự", "đọc truyện tranh ở MeDocTruyenTranh vui ghê",
+        "không afk nha roblox", "tôi còn đang chơi mà", "tôi yêu Raiden"
+    }
+    while true do
+        task.wait(300) -- 5 phút
+        pcall(function()
+            game.ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(
+                phrases[math.random(1, #phrases)], "All"
+            )
+        end)
     end
-end
+end)
 
---=== Vòng lặp chống AFK ===--
+--===[ Vòng lặp chống AFK ]===--
 local function antiAFKLoop()
     while ENABLED do
-        task.wait(CHECK_INTERVAL)
-        if tick() - lastActionTime >= ACTION_INTERVAL then
+        task.wait(30)
+        if tick() - lastActionTime >= 120 then
             local funcs = {randomMove, fakeKey, rotateCam, simulateClick, simulateMouseMove, jump}
             funcs[math.random(1,#funcs)]()
             lastActionTime = tick()
-            status.Text = "Anti AFK Chamber: Hành động lúc "..os.date("%H:%M:%S")
+            status.Text = "Anti AFK: Đã hoạt động lúc " .. os.date("%H:%M:%S")
         end
     end
 end
 
--- Rejoin support
+-- Auto chạy lại sau teleport
 player.CharacterAdded:Connect(function(c)
     character = c
-    humanoid  = c:WaitForChild("Humanoid")
+    humanoid = c:WaitForChild("Humanoid")
+    task.wait(1)
+    task.spawn(antiAFKLoop)
 end)
 
--- Start
 task.spawn(antiAFKLoop)
-task.spawn(autoChat)  -- Chạy tự động chat
