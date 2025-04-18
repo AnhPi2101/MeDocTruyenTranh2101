@@ -2,6 +2,11 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInput = game:GetService("UserInputService")
 local TeleportService = game:GetService("TeleportService")
+
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
+
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
