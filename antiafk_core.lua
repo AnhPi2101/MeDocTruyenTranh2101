@@ -64,6 +64,7 @@ spawn(function()
         local tween = TweenService:Create(gradient, tweenInfo, goal)
         tween:Play()
         tween.Completed:Wait()
+        wait(0.1)  -- Giảm tần suất tween
     end
 end)
 
@@ -113,7 +114,7 @@ spawn(function()
         local m = math.floor((elapsed % 3600) / 60)
         local s = elapsed % 60
         timerLabel.Text = string.format("%02d:%02d:%02d", h, m, s)
-        wait(1)
+        wait(1)  -- Đặt wait lâu hơn để giảm tải
     end
 end)
 
@@ -164,7 +165,7 @@ spawn(function()
     while true do
         -- Fake key (bấm phím J)
         game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.J, false, game)
-        wait(0.1)
+        wait(0.2)  -- Giảm tần suất để giảm CPU
         game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.J, false, game)
         wait(20)  -- Mỗi 20 giây
     end
@@ -182,6 +183,7 @@ spawn(function()
                 wait(10)  -- Mỗi 10 giây di chuyển một lần
             end
         end
+        wait(0.1)  -- Thêm tạm thời để giảm CPU
     end
 end)
 
