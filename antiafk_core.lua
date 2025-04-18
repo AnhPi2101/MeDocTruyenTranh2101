@@ -193,28 +193,38 @@ spawn(function()
     end
 end)
 
--- Giảm đồ họa để giảm lag
-spawn(function()
-    while true do
-        game:GetService("ReplicatedStorage"):SetCore("GraphicsQuality", 0)  -- Giảm đồ họa xuống mức tối đa
-        wait(5)  -- Kiểm tra mỗi 5 giây
-    end
-end)
+local function OptimizeGraphics()
+    settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+    settings().Rendering.TextureQuality = Enum.TextureQuality.Low
 
--- Auto Execute On Teleport (Với việc tự động load lại script khi teleport)
-game:GetService("TeleportService").TeleportInit = function()
-    -- Kiểm tra key trước khi tải lại script
-    if getgenv().key == key_required then
-        -- Sau khi teleport, chạy lại script này nếu key đúng
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/AnhPi2101/MeDocTruyenTranh2101/main/antiafk_loader.lua"))()
-    else
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Anti AFK Chamber",
-            Text = "Key không hợp lệ!",
-            Duration = 10
-        })
+    game:GetService("Lighting").GlobalShadows = false
+    game:GetService("Lighting").FogEnd = 1e10
+    game:GetService("Lighting").Brightness = 0
+    game:GetService("Lighting").Ambient = Color3.new(0, 0, 0)
+
+    for _, v in pairs(game:GetService("Lighting"):GetChildren()) do
+        if v:IsA("PostEffect") then v:Destroy() end
+    end
+
+    for _, obj in pairs(game:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            obj.Material = Enum.Material.SmoothPlastic
+            obj.Reflectance = 0
+            obj.CastShadow = false
+        elseif obj:IsA("Decal") or obj:IsA("Texture") then
+            obj:Destroy()
+        elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") then
+            obj.Enabled = false
+        elseif obj:IsA("Explosion") or obj:IsA("Fire") or obj:IsA("Smoke") then
+            obj:Destroy()
+        end
+    end
+
+    for _, sound in pairs(workspace:GetDescendants()) do
+        if sound:IsA("Sound") and sound.Playing and sound.Volume > 0.1 then
+            sound.Volume = 0
+        end
     end
 end
 
--- Tải script chính của bạn sau khi xác thực key
-loadstring(game:HttpGet("https://raw.githubusercontent.com/AnhPi2101/MeDocTruyenTranh2101/main/antiafk_loader.lua"))()
+pcall(OptimizeGraphics)
