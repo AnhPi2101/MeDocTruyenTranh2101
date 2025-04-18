@@ -1,13 +1,17 @@
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInput = game:GetService("UserInputService")
+local Lighting = game:GetService("Lighting")
+local StarterGui = game:GetService("StarterGui")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
 -- Kiểm tra key
 local key_required = "zzollyan"
 if getgenv().key ~= key_required then
-    game:GetService("StarterGui"):SetCore("SendNotification", {
+    StarterGui:SetCore("SendNotification", {
         Title = "Anti AFK Chamber",
         Text = "Sai key hoặc chưa nhập key.\nDùng: getgenv().key = \"zzollyan\"",
         Duration = 10
@@ -15,7 +19,7 @@ if getgenv().key ~= key_required then
     return
 end
 
--- UI chính
+-- UI
 local screenGui = Instance.new("ScreenGui", playerGui)
 screenGui.Name = "MeDocRaidenUI"
 screenGui.ResetOnSpawn = false
@@ -38,7 +42,8 @@ gradient.Color = ColorSequence.new{
     ColorSequenceKeypoint.new(1, Color3.fromRGB(60, 60, 60))
 }
 
-spawn(function()
+-- Xoay gradient
+task.spawn(function()
     while true do
         local tween = TweenService:Create(gradient, TweenInfo.new(20, Enum.EasingStyle.Linear), {Rotation = gradient.Rotation + 360})
         tween:Play()
@@ -46,44 +51,40 @@ spawn(function()
     end
 end)
 
-local function addLabel(text, position)
+-- Label UI
+local function addLabel(text, position, bold)
     local label = Instance.new("TextLabel", frame)
-    label.Size = UDim2.new(1, 0, 0, 25)
+    label.Size = UDim2.new(1, 0, 0, bold and 35 or 25)
     label.Position = position
     label.BackgroundTransparency = 1
-    label.Font = Enum.Font.Gotham
+    label.Font = bold and Enum.Font.GothamBold or Enum.Font.Gotham
     label.TextScaled = true
     label.TextXAlignment = Enum.TextXAlignment.Center
     label.TextColor3 = Color3.new(1, 1, 1)
     label.Text = text
+    label.RichText = true
     return label
 end
 
-local title = addLabel('<font color="#00AEEF">MeDoc</font><font color="#EC0B3D">TruyenTranh</font>', UDim2.new(0, 0, 0, 5))
-title.RichText = true
-title.Font = Enum.Font.GothamBold
-title.Size = UDim2.new(1, 0, 0, 35)
-
+local title = addLabel('<font color="#00AEEF">MeDoc</font><font color="#EC0B3D">TruyenTranh</font>', UDim2.new(0, 0, 0, 5), true)
 local statusLabel = addLabel("Status: Đang hoạt động", UDim2.new(0, 0, 0, 50))
 local timerLabel = addLabel("00:00:00", UDim2.new(0, 0, 0, 85))
 
-spawn(function()
+task.spawn(function()
     local startTime = os.time()
     while true do
         local elapsed = os.time() - startTime
         timerLabel.Text = string.format("%02d:%02d:%02d", math.floor(elapsed / 3600), math.floor((elapsed % 3600) / 60), elapsed % 60)
-        wait(1)
+        task.wait(1)
     end
 end)
 
--- Kéo thả UI
+-- Kéo thả
 do
     local dragging, dragStart, startPos, dragInput
     frame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            dragStart = input.Position
-            startPos = frame.Position
+            dragging, dragStart, startPos = true, input.Position, frame.Position
             input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then dragging = false end
             end)
@@ -101,16 +102,16 @@ do
 end
 
 -- Auto Jump mỗi 15 giây
-spawn(function()
+task.spawn(function()
     while true do
         local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
         if humanoid then humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end
-        wait(15)
+        task.wait(15)
     end
 end)
 
 -- Auto W/A/S/D mỗi 10 giây
-spawn(function()
+task.spawn(function()
     local moveList = {Vector3.new(1, 0, 0), Vector3.new(-1, 0, 0), Vector3.new(0, 0, 1), Vector3.new(0, 0, -1)}
     while true do
         local char = player.Character
@@ -120,29 +121,27 @@ spawn(function()
                 humanoid:Move(moveList[math.random(1, #moveList)])
             end
         end
-        wait(10)
+        task.wait(10)
     end
 end)
 
--- Fake key (J) mỗi 20s
-spawn(function()
+-- Fake key mỗi 20s
+task.spawn(function()
     while true do
-        local vim = game:GetService("VirtualInputManager")
-        vim:SendKeyEvent(true, Enum.KeyCode.J, false, game)
-        wait(0.1)
-        vim:SendKeyEvent(false, Enum.KeyCode.J, false, game)
-        wait(20)
+        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.J, false, game)
+        task.wait(0.1)
+        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.J, false, game)
+        task.wait(20)
     end
 end)
 
--- Giảm FPS (giảm CPU)
+-- Lock FPS 20
 pcall(function()
     setfpscap(20)
 end)
 
--- Tối ưu đồ hoạ không phá map
+-- Tối ưu đồ họa không phá map
 local function OptimizeGraphics()
-    local Lighting = game:GetService("Lighting")
     settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
     settings().Rendering.TextureQuality = Enum.TextureQuality.Low
 
@@ -151,11 +150,11 @@ local function OptimizeGraphics()
     Lighting.Brightness = 0
     Lighting.Ambient = Color3.new(0, 0, 0)
 
-    for _, v in pairs(Lighting:GetChildren()) do
+    for _, v in ipairs(Lighting:GetChildren()) do
         if v:IsA("PostEffect") then v:Destroy() end
     end
 
-    for _, obj in pairs(game:GetDescendants()) do
+    for _, obj in ipairs(workspace:GetDescendants()) do
         if obj:IsA("BasePart") then
             obj.Material = Enum.Material.SmoothPlastic
             obj.Reflectance = 0
@@ -169,7 +168,7 @@ local function OptimizeGraphics()
         end
     end
 
-    for _, sound in pairs(workspace:GetDescendants()) do
+    for _, sound in ipairs(workspace:GetDescendants()) do
         if sound:IsA("Sound") and sound.Volume > 0.1 then
             sound.Volume = 0
         end
