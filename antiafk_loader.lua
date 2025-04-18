@@ -49,7 +49,6 @@ if not getgenv().key then
         if userKey == correctKey then
             getgenv().key = userKey
             gui:Destroy()
-            -- Tải lại script khi key đúng
             loadstring(game:HttpGet(rawScriptURL))()
         else
             textbox.Text = ""
@@ -58,18 +57,18 @@ if not getgenv().key then
     end)
 else
     if getgenv().key == correctKey then
-        -- Tải lại script khi key đúng
         loadstring(game:HttpGet(rawScriptURL))()
     else
         warn("Sai key!")
     end
 end
 
--- Tích hợp queue_on_teleport để tự động tải lại khi teleport
+-- Auto Execute On Teleport (Tối ưu)
 if queue_on_teleport then
-    queue_on_teleport([[
-        -- Khi teleport, tải lại script Anti AFK hoàn chỉnh
-        getgenv().key = "zzollyan"
+    local teleportScript = [==[
+        repeat wait() until game:IsLoaded()
+        wait(1)
         loadstring(game:HttpGet("https://raw.githubusercontent.com/AnhPi2101/MeDocTruyenTranh2101/main/antiafk_loader.lua"))()
-    ]])
+    ]==]
+    queue_on_teleport(teleportScript)
 end
