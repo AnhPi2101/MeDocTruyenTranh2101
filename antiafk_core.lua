@@ -6,23 +6,33 @@ local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
 -- Cấu hình key
-local key_required = "zzollyan"
+local key_required = "zzollyan"  -- Key yêu cầu
 local timeout = 15
 local start = tick()
 
 -- Kiểm tra key
-repeat task.wait(0.5) until getgenv().key ~= nil or tick() - start > timeout
+repeat
+    task.wait(0.5)
+until getgenv().key ~= nil or tick() - start > timeout
 
 if getgenv().key ~= key_required then
-	game:GetService("StarterGui"):SetCore("SendNotification", {
-		Title = "Anti AFK Chamber",
-		Text = "Sai key hoặc chưa nhập key.\nDùng: getgenv().key = \"zzollyan\"",
-		Duration = 10
-	})
-	return
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "Anti AFK Chamber",
+        Text = "Sai key hoặc chưa nhập key.\nDùng: getgenv().key = \"zzollyan\"",
+        Duration = 10
+    })
+    return
 end
 
+-- ** Tạo UI với nền Raiden Shogun **
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInput = game:GetService("UserInputService")
+
 -- GUI GỐC
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "MeDocRaidenUI"
 screenGui.ResetOnSpawn = false
@@ -48,21 +58,21 @@ image.Parent = frame
 -- HIỆU ỨNG GRADIENT
 local gradient = Instance.new("UIGradient")
 gradient.Color = ColorSequence.new{
-	ColorSequenceKeypoint.new(0, Color3.fromRGB(220, 220, 220)),
-	ColorSequenceKeypoint.new(1, Color3.fromRGB(60, 60, 60)),
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(220, 220, 220)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(60, 60, 60)),
 }
 gradient.Rotation = 0
 gradient.Parent = image
 
 -- TWEEN GRADIENT LIÊN TỤC
 spawn(function()
-	local tweenInfo = TweenInfo.new(20, Enum.EasingStyle.Linear)
-	while true do
-		local goal = { Rotation = gradient.Rotation + 360 }
-		local tween = TweenService:Create(gradient, tweenInfo, goal)
-		tween:Play()
-		tween.Completed:Wait()
-	end
+    local tweenInfo = TweenInfo.new(20, Enum.EasingStyle.Linear)
+    while true do
+        local goal = { Rotation = gradient.Rotation + 360 }
+        local tween = TweenService:Create(gradient, tweenInfo, goal)
+        tween:Play()
+        tween.Completed:Wait()
+    end
 end)
 
 -- TIÊU ĐỀ RICHTEXT
@@ -104,139 +114,107 @@ timerLabel.Parent = frame
 
 -- TÍNH GIỜ
 spawn(function()
-	local startTime = os.time()
-	while true do
-		local elapsed = os.time() - startTime
-		local h = math.floor(elapsed / 3600)
-		local m = math.floor((elapsed % 3600) / 60)
-		local s = elapsed % 60
-		timerLabel.Text = string.format("%02d:%02d:%02d", h, m, s)
-		wait(1)
-	end
+    local startTime = os.time()
+    while true do
+        local elapsed = os.time() - startTime
+        local h = math.floor(elapsed / 3600)
+        local m = math.floor((elapsed % 3600) / 60)
+        local s = elapsed % 60
+        timerLabel.Text = string.format("%02d:%02d:%02d", h, m, s)
+        wait(1)
+    end
 end)
 
 -- KÉO THẢ UI
 do
-	local dragging, dragInput, dragStart, startPos
-	local function update(input)
-		local delta = input.Position - dragStart
-		frame.Position = UDim2.new(
-			startPos.X.Scale,
-			startPos.X.Offset + delta.X,
-			startPos.Y.Scale,
-			startPos.Y.Offset + delta.Y
-		)
-	end
+    local dragging, dragInput, dragStart, startPos
+    local function update(input)
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
 
-	frame.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			dragging  = true
-			dragStart = input.Position
-			startPos  = frame.Position
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging  = true
+            dragStart = input.Position
+            startPos  = frame.Position
 
-			input.Changed:Connect(function()
-				if input.UserInputState == Enum.UserInputState.End then
-					dragging = false
-				end
-			end)
-		end
-	end)
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
 
-	frame.InputChanged:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseMovement then
-			dragInput = input
-		end
-	end)
+    frame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
+        end
+    end)
 
-	UserInput.InputChanged:Connect(function(input)
-		if dragging and input == dragInput then
-			update(input)
-		end
-	end)
+    UserInput.InputChanged:Connect(function(input)
+        if dragging and input == dragInput then
+            update(input)
+        end
+    end)
 end
 
---===[ Các chức năng chống AFK ]===--
+-- ** Tích hợp các chức năng khác **
 
-local function fakeKey()
-	pcall(function()
-		game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.J, false, game)  -- Thay Space thành J
-		game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.J, false, game) -- Thay Space thành J
-	end)
-end
-
-local function jump()
-	pcall(function()
-		game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.Space, false, game)
-		game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.Space, false, game)
-	end)
-end
-
-local function moveRandomDirection()
-	local directions = {Enum.KeyCode.W, Enum.KeyCode.A, Enum.KeyCode.S, Enum.KeyCode.D}
-	local randomDirection = directions[math.random(1, #directions)]
-	pcall(function()
-		game:GetService("VirtualInputManager"):SendKeyEvent(true, randomDirection, false, game)
-		game:GetService("VirtualInputManager"):SendKeyEvent(false, randomDirection, false, game)
-	end)
-end
-
---===[ Tự động chat ]===--
-
-task.spawn(function()
-	local messages = {
-		"script tốt thật sự", "tôi yêu MeDocTruyenTranh",
-		"Raiden đẹp thật", "mình còn đang chơi mà", "anti afk không thấm được"
-	}
-	while true do
-		wait(300)
-		local msg = messages[math.random(1, #messages)]
-		pcall(function()
-			game.ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg, "All")
-		end)
-	end
+-- Fakekey và tự động nhảy mỗi 20 giây
+spawn(function()
+    while true do
+        -- Fake key (bấm phím J)
+        game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.J, false, game)
+        wait(0.1)
+        game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.J, false, game)
+        wait(20)  -- Mỗi 20 giây
+    end
 end)
 
---===[ Detect AFK Chamber và auto return to lobby ]===--
-
-local function detectAFKChamber()
-	while true do
-		local placeId = game.PlaceId
-		-- Bạn cần thay PLACEID_AFK thành placeId thật sự của AFK Chamber
-		local PLACEID_AFK = 16465572687
-		local LOBBY_PLACEID = 1234567890  -- PlaceId của lobby
-
-		if placeId == PLACEID_AFK then
-			game:GetService("TeleportService"):TeleportToPlaceInstance(LOBBY_PLACEID, game.JobId)
-		end
-		wait(10)
-	end
-end
-
--- Tối ưu đồ họa (reduce lag)
-pcall(function()
-	for _, v in pairs(game:GetDescendants()) do
-		if v:IsA("BasePart") then
-			v.Material = Enum.Material.SmoothPlastic
-			v.Reflectance = 0
-		elseif v:IsA("Decal") or v:IsA("Texture") then
-			v:Destroy()
-		elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
-			v.Lifetime = NumberRange.new(0)
-		end
-	end
-
-	settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
-	settings().Rendering.EditQualityLevel = Enum.QualityLevel.Level01
+-- Di chuyển W/A/S/D tự động mỗi 10 giây
+spawn(function()
+    while true do
+        local player = game.Players.LocalPlayer
+        local char = player.Character
+        if char then
+            local humanoid = char:FindFirstChild("Humanoid")
+            if humanoid then
+                humanoid:Move(Vector3.new(1, 0, 0))  -- Di chuyển về phía trước (W)
+                wait(10)  -- Mỗi 10 giây di chuyển một lần
+            end
+        end
+    end
 end)
 
---=== Chạy Vòng Lặp Chính ===--
+-- Giảm đồ họa để giảm lag
+spawn(function()
+    while true do
+        game:GetService("ReplicatedStorage"):SetCore("GraphicsQuality", 0)  -- Giảm đồ họa xuống mức tối đa
+        wait(5)  -- Kiểm tra mỗi 5 giây
+    end
+end)
 
-while true do
-	wait(10)
-	fakeKey()
-	jump()
-	moveRandomDirection()
-
-	-- Update trạng thái UI
-	statusLabel.Text = "Status: Đang hoạt động"
+-- Auto Execute On Teleport (Với việc tự động load lại script khi teleport)
+game:GetService("TeleportService").TeleportInit = function()
+    -- Kiểm tra key trước khi tải lại script
+    if getgenv().key == key_required then
+        -- Sau khi teleport, chạy lại script này nếu key đúng
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/AnhPi2101/MeDocTruyenTranh2101/main/antiafk_loader.lua"))()
+    else
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Anti AFK Chamber",
+            Text = "Key không hợp lệ!",
+            Duration = 10
+        })
+    end
 end
+
+-- Tải script chính của bạn sau khi xác thực key
+loadstring(game:HttpGet("https://raw.githubusercontent.com/AnhPi2101/MeDocTruyenTranh2101/main/antiafk_loader.lua"))()
