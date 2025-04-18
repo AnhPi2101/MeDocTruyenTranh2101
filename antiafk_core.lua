@@ -25,14 +25,6 @@ if getgenv().key ~= key_required then
 end
 
 -- ** Tạo UI với nền Raiden Shogun **
-local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local UserInput = game:GetService("UserInputService")
-
--- GUI GỐC
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
-
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "MeDocRaidenUI"
 screenGui.ResetOnSpawn = false
@@ -51,7 +43,7 @@ local image = Instance.new("ImageLabel")
 image.Size = UDim2.new(1, 0, 1, 0)
 image.Position = UDim2.new(0, 0, 0, 0)
 image.BackgroundTransparency = 1
-image.Image = "rbxassetid://99255503850752" -- <<< Thay bằng ID ảnh Raiden
+image.Image = "rbxassetid://99255503850752" -- Thay bằng ID ảnh Raiden
 image.ScaleType = Enum.ScaleType.Crop
 image.Parent = frame
 
@@ -167,7 +159,7 @@ end
 
 -- ** Tích hợp các chức năng khác **
 
--- Fakekey và tự động nhảy mỗi 20 giây
+-- Fakekey mỗi 20 giây
 spawn(function()
     while true do
         -- Fake key (bấm phím J)
@@ -193,6 +185,20 @@ spawn(function()
     end
 end)
 
+-- Auto jump mỗi 15 giây
+spawn(function()
+    while true do
+        local char = player.Character
+        if char and char:FindFirstChildOfClass("Humanoid") then
+            pcall(function()
+                char:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
+            end)
+        end
+        wait(15)  -- Thay đổi từ 20 thành 15 giây ở đây
+    end
+end)
+
+-- Tối ưu hóa đồ họa
 local function OptimizeGraphics()
     settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
     settings().Rendering.TextureQuality = Enum.TextureQuality.Low
