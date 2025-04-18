@@ -62,13 +62,3 @@ else
         warn("Sai key!")
     end
 end
-
--- Auto Execute On Teleport (Tối ưu)
-if queue_on_teleport then
-    local teleportScript = [==[
-        repeat wait() until game:IsLoaded()
-        wait(1)
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/AnhPi2101/MeDocTruyenTranh2101/main/antiafk_loader.lua"))()
-    ]==]
-    queue_on_teleport(teleportScript)
-end
